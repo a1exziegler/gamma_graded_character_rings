@@ -1,0 +1,1 @@
+# gamma_graded_character_rings
