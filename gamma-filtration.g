@@ -1,9 +1,9 @@
-#This work depends on the function product_rep_ring. My advisor Matthias Wendt already provided the function but I need to give proper credit.
+#This work depends on the function product_rep_ring. My advisor Matthias Wendt provided the function as well as vital advise.
 #In the sequel G will denote a finite group, while the parameter tbl will be assumed to be CharacterTable(G) and reps will be assumed to be
 #Irr(tbl). We denote by R(G) the representation ring of G over the complex numbers and by gr*_\gamma the associated graded of R(G) given by the
 #gamma filtration.
 
-#The objects that are computed by most functions are virtual characters i.e. ZZ-linear combinations of irreducible chracters.
+#The objects that are computed by most functions are virtual characters i.e. ZZ-linear combinations of irreducible characters.
 #We will represent these as lists of integers of the same length as reps. The i-th integer in this list will be the i-th coefficient
 #in said linear combination. For later computations we will also need to take into account representations of virtual characters
 #as polynomials evaluated in Chern classes of irreducible characters. In this case we return a pair of lists where the first
@@ -13,8 +13,14 @@
 #A list of these abstract monomials of Chern classes represents a polynomial whose summands are the entries of the list.
 #These representations are generally non-unique. 
 
-product_rep_ring :=function() #TODO Ask Matthias Wendt how to give him proper credit before using his work here
-	end;
+#This is taken from a script by my advisor Matthias Wendt with his permission
+product_rep_ring := function(reps, vc1, vc2)
+        local num, prods;
+        num := Length(reps);
+        prods := Filtered(Tuples([1..num],2), pair -> vc1[pair[1]]*vc2[pair[2]] <> 0);
+        if prods = [] then return ListWithIdenticalEntries(num,0); fi;
+        return Sum(List(prods, pair -> List(reps, chi -> vc1[pair[1]]*vc2[pair[2]]*ScalarProduct(reps[pair[1]]*reps[pair[2]], chi))));
+    end;
 
 
 #computes the k-th lambda operation applied to the integer n as an element in R(G) represented as an integer
@@ -30,7 +36,7 @@ ext_int := function(n,k)
 	end;
 	
 #converts an integer n to the n-th multiple of the pos-th character of G as a linear combination of irreducible characters
-int_to_character := function(n,len, pos) 
+int_to_character := function(n, len, pos) 
 	local result;
 	result := List([1..len], j -> 0);
 	result[pos] := n;
@@ -38,7 +44,7 @@ int_to_character := function(n,len, pos)
 	end;
 	
 #computes all n-th chern classes, returns a pair of a list of linear combination of characters and a list of corresponding abstract CHern classes
-chern_classes := function(tbl,reps,n) 
+chern_classes := function(tbl, reps, n) 
 	local ext, presult, result, i, k;
 	ext := [1..n];
 	for i in [1..n] do ext[i] := List(AntiSymmetricParts(tbl, reps, i), c -> List(reps, chi -> ScalarProduct(c,chi))); od;
@@ -250,15 +256,15 @@ higher_dim_gens:= function(tbl, reps, n)
 #This computes a hopefully small generating set of R(G) as a ZZ-algebra. Taking Chern classes we can later deduce a generating set of gr*_\gamma
 rep_ring_gens := function(tbl, reps)
 	local dim_n, max_dim, n, result, tmp;
-	result :=[];
+	result := [];
 	max_dim := Maximum(List(reps, i -> i[1]));
 	Print("The following is a hopefully small set of generators of the ring of virtual characters of a group.\nIt is not necessarily a minimal set of generators\n");
 	Print("The dimension 1 generators of R(G) are:\n");
-	tmp := one_dim_gens(tbl,reps);
+	tmp := one_dim_gens(tbl, reps);
 	Print(tmp[1]);
 	Append(result, tmp[2]);
 	for n in [2..max_dim] do
-		tmp:= higher_dim_gens(tbl,reps, n);
+		tmp:= higher_dim_gens(tbl, reps, n);
 		Print(StringFormatted("\nThe dimension {} generators of R(G) are:\n", n));
 		Print(tmp[1]);
 		Append(result,tmp[2]);

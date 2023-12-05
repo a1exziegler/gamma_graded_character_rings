@@ -12,7 +12,7 @@ gap.eval('Read("gamma-filtration.g");')
 
 #given a list of generators in a polynomial ring this converts abstract monomials of Chern classes into 
 #monomials of generators. To do so the i-th entry of gens_key (which is assumed to be a Chern class) is identified
-# with the i-th gneretor in genertors
+# with the i-th generetor in generators
 def abstract_characters(generators, chern_monos, gens_key):
     chern_monos_copy = deepcopy(chern_monos)
     result = [0 for i in chern_monos_copy]
@@ -41,23 +41,23 @@ def abstract_gamma_ideal(T,reps,generators, n, gens_key):
 
 #this computes a generating set of gr*_\gamma with many redundancies. It can be used to find a simple description of the preimage of a gamma ideal
 #in a polynomial ring
-def abstract_assoc_gens_weak(T,reps):
+def abstract_assoc_gens_weak(T, reps, coefficents):
     result = gap.function_call('weak_assoc_generators',[T,reps])[2].sage()
-    R = PolynomialRing(ZZ,'x',gap.function_call('Length',[result]).sage())
-    return [result,R.gens(),R]
+    R = PolynomialRing(coefficents,'x',gap.function_call('Length',[result]).sage())
+    return [result, R.gens(), R]
     
 #this computes a generating set of gr*_\gamma with few redundancies. It can be used to find a "small" set of additive generators of 
 #the graded pieces of gr*_\gamma whose linear combinations we can check for relations.
 def abstract_assoc_gens_strong(T,reps, generators, gens_key):
     strong_key = gap.function_call('assoc_generators',[T,reps])[2].sage()
-    return [strong_key,abstract_characters(generators, strong_key, gens_key)]
+    return [strong_key, abstract_characters(generators, strong_key, gens_key)]
     
-#this compute a "small" set of additive generators of the n-th graded piece of gr*_\gamma whose linear combinations we can check for relations
-def abstract_assoc_summand_gens(generators, T,reps,n, gens_key):
+#this computes a "small" set of additive generators of the n-th graded piece of gr*_\gamma whose linear combinations we can check for relations
+def abstract_assoc_summand_gens(generators, T, reps, n, gens_key):
     almost_abstract_gens=gap.function_call('gamma_ideal_generators',[T,reps,n,gens_key])[2].sage()
     high_degree = 0
     for i in range(len(almost_abstract_gens)):
-        degree=0
+        degree = 0
         for j in almost_abstract_gens[i]:
             if j!= 1:
                 degree = degree+j[1]
@@ -66,7 +66,7 @@ def abstract_assoc_summand_gens(generators, T,reps,n, gens_key):
     for i in range(high_degree):
         almost_abstract_gens.pop()        
     abstract_gens = abstract_characters(generators, almost_abstract_gens, gens_key)
-    almost_abstract_ideal=gap.function_call('gamma_ideal_generators',[T,reps,n+1,gens_key])[2].sage()
+    almost_abstract_ideal = gap.function_call('gamma_ideal_generators',[T,reps,n+1,gens_key])[2].sage()
     abstract_ideal = abstract_characters(generators, almost_abstract_ideal, gens_key)
     return [abstract_gens, abstract_ideal, gens_key]
 
@@ -99,7 +99,7 @@ def torsion(ideal, upper_bound, gens):
     return result
     
 #this computes the set of linear combinations of elements in gens that vanishes modulo ideal
-#torsion is assumed to be a list of integers such that the i-th element of gens has order at most (with resepect to divisibility) order torsion[i]
+#torsion is assumed to be a list of integers such that the i-th element of gens has order at most (with respect to divisibility) order torsion[i]
 def relations(ideal, torsion, gens):
     result = []
     for i in cartesian_product([range(i) for i in torsion]):
@@ -114,11 +114,11 @@ def relations(ideal, torsion, gens):
 #all elements of the irrelevant ideal are upper-bound torsion 
 #modified_strong_gens is either [false] which is the a priori option or [true, x] where x is a list of positions of non-redundant generators.
 #this can be used to exclude redundant generators and thus improve performance
-def presentation(group, n, upper_bound, modified_strong_gens):
+def presentation(group, n, upper_bound, modified_strong_gens, coefficients):
     result=[]
     T=gap(group).CharacterTable()
     reps=gap(T).Irr()
-    weak_gens=abstract_assoc_gens_weak(T,reps)
+    weak_gens=abstract_assoc_gens_weak(T, reps, coefficients)
     tmp = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0])
     strong_gens=[[],[]]
     if modified_strong_gens[0]:
@@ -129,8 +129,8 @@ def presentation(group, n, upper_bound, modified_strong_gens):
     print(strong_gens[1])
     print(strong_gens[0])
     for i in range(1,n+1):
-        tmp_summand_gens=abstract_assoc_summand_gens(strong_gens[1], T,reps,i, strong_gens[0])
-        tmp_gamma=proper_abstract_gamma_ideal(T,reps,i+1, weak_gens)
+        tmp_summand_gens=abstract_assoc_summand_gens(strong_gens[1], T, reps, i, strong_gens[0])
+        tmp_gamma=proper_abstract_gamma_ideal(T, reps, i+1, weak_gens)
         tmp_torsion=torsion(ideal(tmp_gamma), upper_bound, tmp_summand_gens[0])
         for j in range(len(tmp_torsion)):
             result=result+[tmp_torsion[j]*tmp_summand_gens[0][j]]
@@ -139,11 +139,11 @@ def presentation(group, n, upper_bound, modified_strong_gens):
     
 # this function takes the same input as presentation but only prints the list of orders of generators of
 # the i-th graded pieces of gr*_\gamma with i<=n. It is useful to gather information where presentation is not a feasible option.
-def improved_torsion(group, n, upper_bound, modified_strong_gens):
+def improved_torsion(group, n, upper_bound, modified_strong_gens, coefficents):
     result=[]
     T=gap(group).CharacterTable()
     reps=gap(T).Irr()
-    weak_gens=abstract_assoc_gens_weak(T,reps)
+    weak_gens=abstract_assoc_gens_weak(T, reps, coefficents)
     tmp = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0])
     strong_gens=[[],[]]
     if modified_strong_gens[0]:
