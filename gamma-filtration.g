@@ -1,4 +1,4 @@
-#This work depends on the function product_rep_ring. My advisor Matthias Wendt provided the function as well as vital advise.
+#This work depends on the function product_rep_ring. My advisor Matthias Wendt provided the function as well as vital advice.
 #In the sequel G will denote a finite group, while the parameter tbl will be assumed to be CharacterTable(G) and reps will be assumed to be
 #Irr(tbl). We denote by R(G) the representation ring of G over the complex numbers and by gr*_\gamma the associated graded of R(G) given by the
 #gamma filtration.
@@ -21,7 +21,11 @@ product_rep_ring := function(reps, vc1, vc2)
         if prods = [] then return ListWithIdenticalEntries(num,0); fi;
         return Sum(List(prods, pair -> List(reps, chi -> vc1[pair[1]]*vc2[pair[2]]*ScalarProduct(reps[pair[1]]*reps[pair[2]], chi))));
     end;
-
+    
+exterior_power := function(tbl, reps, base, exponent)
+	local c, chi;
+	return List(AntiSymmetricParts(tbl, reps, exponent), c -> List(reps, chi -> ScalarProduct(c,chi)))[base];
+	end;
 
 #computes the k-th lambda operation applied to the integer n as an element in R(G) represented as an integer
 ext_int := function(n,k) 
@@ -59,8 +63,24 @@ chern_classes := function(tbl, reps, n)
 	return result;
 	end;
 	
+#computes all n-th chern classes, returns a pair of a list of linear combination of characters and a list of corresponding abstract CHern classes
+weak_chern_classes := function(tbl, reps, n) 
+	local ext, presult, result, i, k;
+	ext := [1..n];
+	for i in [1..n] do ext[i] := List(AntiSymmetricParts(tbl, reps, i), c -> List(reps, chi -> ScalarProduct(c,chi))); od;
+	presult := List([1..Length(reps)], j -> int_to_character(ext_int(n-1-reps[j][1],n),Length(reps),1)); 
+	for i in [1..n] do 
+		presult := presult + List([1..Length(reps)], j -> product_rep_ring(reps, ext[i][j],int_to_character(ext_int(n-1-reps[j][1],n-i),Length(reps),1))); od;
+	result :=[presult, List([1..Length(reps)], c-> [1,[c,n]])];
+	k:= Length(presult);
+	for i in [1..k] do
+		if reps[result[2][k-i+1][2][1]][1]<n then Remove(result[1], k-i+1); Remove(result[2], k-i+1); fi;
+	od;
+	return result;
+	end;
+	
 #an alternative to chern_classes that takes into account a restricted list of generators of R(G)
-filtered_chern_classes := function(tbl,reps,n, gens) 
+filtered_chern_classes := function(tbl,reps, n, gens) 
 	local ext, presult, result, i, k;
 	ext := [1..n];
 	for i in [1..n] do ext[i] := List(AntiSymmetricParts(tbl, reps, i), c -> List(reps, chi -> ScalarProduct(c,chi))); od;
@@ -75,6 +95,18 @@ filtered_chern_classes := function(tbl,reps,n, gens)
 	Print(result);
 	return result;
 	end;
+	
+single_chern_class := function(tbl,reps,n,i)
+	local ext, presult, result, k, j;
+	ext := [1..n];
+	for j in [1..n] do ext[j] := List(AntiSymmetricParts(tbl, [reps[i]], j), c -> List(reps, chi -> ScalarProduct(c,chi)))[1]; od;
+	presult := int_to_character(ext_int(n-1-reps[i][1],n),Length(reps),1); 
+	for j in [1..n] do 
+		presult := presult + product_rep_ring(reps, ext[j],int_to_character(ext_int(n-1-reps[i][1],n-j),Length(reps),1)); od;
+	return [presult, [1,[i,n]]];
+	end;
+	
+
 	
 	
 #this computes the order of a unit in the group of units of R(G) - as of now it is not used in my code
@@ -225,7 +257,44 @@ divides_rep_ring := function(reps, vc1, vc2)
 	od;
 	return result;
 	end;
-	
+
+chern_class_of_product := function(rank,n, one_dim_class, other_class, gens)
+	local result, i, k;
+	result:=[];
+	Add(result,[Binomial(rank,n)]);
+	for i in [1..n] do
+		Add(result[1],[one_dim_class,1]);
+	od;
+	for k in [1..n-1] do
+		if [1,[other_class,n-k]] in gens then 
+			Add(result,[Binomial(rank-n+k,k)]);
+			for i in [1..k] do
+				Add(Last(result),[one_dim_class,1]);
+			od;
+			Add(Last(result),[other_class,n-k]);
+		fi;
+	od;
+	if [1,[other_class,n]] in gens then
+		Add(result,[1,[other_class,n]]);
+	fi;
+	return result;
+	end;
+
+#This can be improved...	
+graded_generator_ideal := function(T,reps, gens)
+	local result, class, x, y, tmp;
+	result:=[[],[]];
+	for x in gens do
+		class:=x;
+		for y in [2..Length(reps)] do
+			if reps[y][1]=reps[class[2][1]][1] and not y=class[2][1] then
+				tmp:=divides_rep_ring(reps,reps[class[2][1]],reps[y]);
+				if tmp[1] then Add(result[1],class); Add(result[2], chern_class_of_product(reps[class[2][1]][1],class[2][2], Position(reps,tmp[2]), y, gens)); fi;
+			fi;
+		od;
+	od;
+	return result;
+	end;
 #this computes representatives of the orbits of the action of linear characters of R(G) which can later be used to compute a hopefully small generating set of the ring gr*_\gamma as a ZZ-algebra
 higher_dim_gens:= function(tbl, reps, n)
 	local dim_n_reps, dim_n, result, not_result, gens_group,i,j;
@@ -278,6 +347,16 @@ weak_assoc_generators := function(tbl,reps)
 	for i in [1..Maximum(List(reps, x-> x[1]))] do pair_append(result, chern_classes(tbl,reps,i)); od;
 	return result;
 	end;
+	
+#This computes a generating set of gr*_\gamma with many redundancies. It will be needed for computing the n-th gamma ideal without complicated term rewriting.
+very_weak_assoc_generators := function(tbl,reps)
+	local result,i;
+	result := [[],[]];
+	for i in [1..Maximum(List(reps, x-> x[1]))] do pair_append(result, weak_chern_classes(tbl,reps,i)); od;
+	return result;
+	end;
+	
+
 
 #This computes a generating set of gr*_\gamma with few redundancies. It is not minimal as we have not computed any relations yet.
 #The Sage code will offer possibilities to manually reduce the generators given by this function.
@@ -316,6 +395,7 @@ abstract_product := function(a,b)
 	end;
 	
 	
+	
 #given lists of pairs of abstract monomials of Chern classes and their virtual characters a,b this computes all products of an element of a with an element of b	
 absolute_product := function(a, b, reps)
 	local result, abstract_result,i,j;
@@ -329,6 +409,54 @@ absolute_product := function(a, b, reps)
 	for i in [1..Length(a[2])] do for j in [1..Length(b[2])] do Add(abstract_result, abstract_product(a[2][i], b[2][j])); od; od;
 	#fi;
 	return [result, abstract_result];
+	end;
+	
+#This computes the n-th chern class of a non-irreducible representation represented as a virtual character	
+reducible_chern_class := function(tbl, reps, n, vchar)
+	local summand, result, new_vchar, i, factor;
+	result:=[List(reps, x->0),[]];
+	summand:=Position(List(vchar, x-> not x=0),true);
+	if n = 0 then
+		result[2]:=[[1]];
+		result[1][1]:=1;
+	elif not summand=fail then
+		if not single_chern_class(tbl, reps, n, summand)[1]=List(reps, x->0) then
+			result:=[single_chern_class(tbl, reps, n, summand)[1],[[1,[summand,n]]]];
+		fi;
+		new_vchar:=ShallowCopy(vchar);
+		new_vchar[summand]:=new_vchar[summand]-1;
+		
+		factor:=reducible_chern_class(tbl,reps, n, new_vchar);
+		if not factor[1]=List(reps, x->0) then
+			Append(result[2], factor[2]);		
+			result[1]:=result[1]+factor[1];
+		fi;
+		
+		for i in [1..n-1] do
+			if not single_chern_class(tbl, reps, i, summand)[1]=List(reps, x->0) then
+				factor:=reducible_chern_class(tbl,reps, n-i, new_vchar);
+				if not factor[1]=List(reps, x->0) then
+					Append(result[2], absolute_product(factor, [[],[[1,[summand,i]]]],reps)[2]);#This is very hacky		
+					result[1]:=result[1]+product_rep_ring(reps,single_chern_class(tbl, reps, i, summand)[1],factor[1]);
+				fi;
+			fi;
+		od;
+	fi;
+	return result;
+	end;
+	
+weak_assoc_generators_with_subgroups := function(tbl,reps, subtbl, subgroup)
+	local result, i, res_reps, tmp, subresult;
+	result := [[],[]];
+	res_reps := List(Irr(tbl), chi->List(Irr(subtbl),x->ScalarProduct(Restricted(chi,subgroup),x)));
+	for i in [1..Maximum(List(reps, x-> x[1]))] do pair_append(result, chern_classes(tbl,reps,i)); od;
+	subresult:=[ShallowCopy(result[1]),ShallowCopy(result[2])];
+	for i in [1..Length(result[1])] do
+		tmp:=reducible_chern_class(subtbl, Irr(subtbl), result[2][i][2][2], res_reps[result[2][i][2][1]]);
+		subresult[1][i]:=tmp[1];
+		subresult[2][i]:=tmp[2];
+	od;
+	return [result, subresult];
 	end;
 	
 #computes the exponent-fold product of the virtual character base	
