@@ -236,13 +236,12 @@ def presentation_tmp(group, n, upper_bound, modified_strong_gens):
     return [macaulay2(ideal(result)).trim().sage(),strong_gens[1]]
 
 # We omit a detailed description and refer the reader to readme.pdf.
-def presentation(group,n, upper_bound, modified_strong_gens):
-    return presentation_with_classes(group,n,upper_bound, modified_strong_gens, [],[])
+def presentation(tbl,n, upper_bound, modified_strong_gens):
+    return presentation_with_classes(tbl,n,upper_bound, modified_strong_gens, [],[])
     
 # We omit a detailed description and refer the reader to readme.pdf.
-def presentation_with_classes(group, n, upper_bound, modified_strong_gens, added_strong_gens, added_degrees): 
+def presentation_with_classes(T, n, upper_bound, modified_strong_gens, added_strong_gens, added_degrees): 
     result=[]
-    T=gap(group).CharacterTable()
     reps=gap(T).Irr() # The irreducible complex characters of G.
     weak_gens=abstract_assoc_gens_weak(T, reps, ZZ, len(added_strong_gens)) # A generating set of gr*_\gamma with many redundancies.
     tmp = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0]) # A generating set of gr*_\gamma with fewer redundancies.
@@ -267,13 +266,12 @@ def presentation_with_classes(group, n, upper_bound, modified_strong_gens, added
     
     
 #Ignore
-def presentation_with_restriction_tmp(group, n, upper_bound, modified_strong_gens, subgroups):
+def presentation_with_restriction_tmp(tbl, n, upper_bound, modified_strong_gens, subgroups):
     variables=["a"]                             #Determine names for generators of the various gr*_\gamma R(H) with H a subgroup
-    for i in range(len(subgroups)-1):           #in terms of multiple copies of "a".
+    for i in range(len(subT)-1):           #in terms of multiple copies of "a".
         variables.append(variables[i]+"a")
     result=[]
     subresult=[[] for i in range(len(subgroups))]
-    T=gap(group).CharacterTable() #The irreducible complex characters of G.
     gap_subgroups=[group.ConjugacyClassesSubgroups()[i].Representative() for i in subgroups]
     reps=gap(T).Irr()
     subT=[i.CharacterTable() for i in gap_subgroups] #The irreducible complex characters of the  subgroups of G specified in subgroups.
@@ -315,25 +313,29 @@ def presentation_with_restriction_tmp(group, n, upper_bound, modified_strong_gen
     result=result+[abstract_characters(weak_gens[1], [generator_ideal[0][i]], weak_gens[0])[0]-abstract_lin_combs(weak_gens[1], [generator_ideal[1][i]], weak_gens[0])[0] for i in range(len(generator_ideal[0]))]
     return [[i for i in relations(I, tmp_torsion, tmp_summand_gens) if i not in ideal(result)]]
     
-# We omit a detailed description and refer the reader to readme.pdf.
-def presentation_with_restriction(group,n, upper_bound, modified_strong_gens, subgroups):
-    return presentation_with_restriction_and_classes(group, n, upper_bound, modified_strong_gens, subgroups, [],[],[],[])
+    
+def prepare_tables(subgroup_list, tbl, subgroups_index):
+    sub_tbl=[subgroup_list[i].Representative().CharacterTable() for i in subgroups_index]
+    return [tbl, sub_tbl]
 
 # We omit a detailed description and refer the reader to readme.pdf.
-def presentation_with_restriction_and_classes(group, n, upper_bound, modified_strong_gens, subgroups, added_strong_gens, added_degrees, sub_added_rels, sub_added_degrees):
+def presentation_with_restriction(tbls, n, upper_bound, modified_strong_gens):
+    return presentation_with_restriction_and_classes(tbls, n, upper_bound, modified_strong_gens, [],[],[],[])
+
+# We omit a detailed description and refer the reader to readme.pdf.
+def presentation_with_restriction_and_classes(tbls, n, upper_bound, modified_strong_gens, added_strong_gens, added_degrees, sub_added_rels, sub_added_degrees):
+    tbl=tbls[0]
+    sub_tbl=tbls[1]
     variables=["a"]                             #Determine names for generators of the various gr*_\gamma R(H) with H a subgroup
-    for i in range(len(subgroups)-1):           #in terms of multiple copies of "a".
+    for i in range(len(sub_tbl)-1):           #in terms of multiple copies of "a".
         variables.append(variables[i]+"a")
     if sub_added_rels == []: #This leaves the option to take sub_added_rels=[] instead of creating a list of empty lists manually.
-        sub_added_rels = [[] for i in subgroups]
-        sub_added_degrees = [[] for i in subgroups]
-    T=gap(group).CharacterTable()
-    gap_subgroups=[group.ConjugacyClassesSubgroups()[i].Representative() for i in subgroups]
-    reps=gap(T).Irr() #The irreducible complex characters of G.
-    subT=[i.CharacterTable() for i in gap_subgroups] # The character tables of the subgroups of G specified in subgroups.
-    weak_gens=abstract_assoc_gens_weak_with_subgroups(T, reps, subT, gap_subgroups, variables, len(added_strong_gens))
+        sub_added_rels = [[] for i in sub_tbl]
+        sub_added_degrees = [[] for i in sub_tbl]
+    reps=gap(tbl).Irr() #The irreducible complex characters of G.
+    weak_gens=abstract_assoc_gens_weak_with_subgroups(tbl, reps, sub_tbl, [i.UnderlyingGroup() for i in sub_tbl], variables, len(added_strong_gens))
     # A generating set of gr^*_\gamma R(G) with many redundancies and the restriction maps of their lifts in R(G) to R(gap_subgroups[i]).
-    tmp = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0]) # A generating set of gr*_\gamma R(G) with fewer redundancies.
+    tmp = abstract_assoc_gens_strong(tbl,reps, weak_gens[1], weak_gens[0]) # A generating set of gr*_\gamma R(G) with fewer redundancies.
     strong_gens=[[],[]]  # strong_gens will consist of precisely the i-the generators given by tmp such that i is an entry in modified_strong_gens[1], if so desired.
     if modified_strong_gens[0]: # Delete strong_gens as described by modified_strong_gens.
         strong_gens[0]=[tmp[0][i] for i in range(len(tmp[0])) if i in modified_strong_gens[1]] 
@@ -341,21 +343,21 @@ def presentation_with_restriction_and_classes(group, n, upper_bound, modified_st
     else:
         strong_gens=tmp
     added_strong_gens_transformed=abstract_lin_combs(weak_gens[1],added_strong_gens,weak_gens[0]) # Generators of the associated graded given by the F_i that are not Chern classes.
-    sub_added_rels_transformed=[abstract_lin_combs(weak_gens[1],sub_added_rels[i],weak_gens[0]) for i in range(len(subgroups))]
+    sub_added_rels_transformed=[abstract_lin_combs(weak_gens[1],sub_added_rels[i],weak_gens[0]) for i in range(len(sub_tbl))]
     # The added generators mean that there are relations not witnessed by the gamma filtration
     deg_list=[strong_gens[0][i][1][1] for i in range(len(strong_gens[0]))]+added_degrees # A list of degrees of all generators (Chern classes and non-Chern classes).
     tmp_summand_gens=gamma_graded_gens(strong_gens[1]+weak_gens[3],deg_list,[n,n])  # Compute an additive set of generators of F_k/F_(k+1).
-    sub_tmp_summand_gens=[[weak_gens[8][j](x) for x in tmp_summand_gens] for j in range(len(subgroups))] 
+    sub_tmp_summand_gens=[[weak_gens[8][j](x) for x in tmp_summand_gens] for j in range(len(sub_tbl))] 
     # Same thing for subgroups
-    tmp_gamma=proper_abstract_gamma_ideal(T, reps, n+1, weak_gens, added_strong_gens_transformed, added_degrees)+[weak_gens[3][i]-added_strong_gens_transformed[i] for i in range(len(added_strong_gens_transformed))] # Compute F_(k+1). 
-    sub_tmp_gamma=[proper_abstract_gamma_ideal(subT[j], subT[j].Irr(), n+1, [weak_gens[4][j], weak_gens[5][j], weak_gens[6][j]],sub_added_rels_transformed[j], sub_added_degrees[j])+[weak_gens[7][j][i]-weak_gens[8][j](added_strong_gens_transformed[i]) for i in range(len(added_strong_gens_transformed))] for j in range(len(subgroups))]
+    tmp_gamma=proper_abstract_gamma_ideal(tbl, reps, n+1, weak_gens, added_strong_gens_transformed, added_degrees)+[weak_gens[3][i]-added_strong_gens_transformed[i] for i in range(len(added_strong_gens_transformed))] # Compute F_(k+1). 
+    sub_tmp_gamma=[proper_abstract_gamma_ideal(sub_tbl[j], sub_tbl[j].Irr(), n+1, [weak_gens[4][j], weak_gens[5][j], weak_gens[6][j]],sub_added_rels_transformed[j], sub_added_degrees[j])+[weak_gens[7][j][i]-weak_gens[8][j](added_strong_gens_transformed[i]) for i in range(len(added_strong_gens_transformed))] for j in range(len(sub_tbl))]
     # Same thing for subgroups
     tmp_torsion=torsion(ideal(tmp_gamma), upper_bound, tmp_summand_gens)
     # Compute torsion of generators of F_n/F_(n+1).
-    sub_tmp_torsion=[torsion(ideal(sub_tmp_gamma[j]), gap_subgroups[j].Size().sage(), sub_tmp_summand_gens[j]) for j in range(len(subgroups))]
+    sub_tmp_torsion=[torsion(ideal(sub_tmp_gamma[j]), sub_tbl[j].UnderlyingGroup().Size().sage(), sub_tmp_summand_gens[j]) for j in range(len(sub_tbl))]
     # Same thing for subgroups
     result=[]
-    subresult = [[] for i in subgroups]
+    subresult = [[] for i in sub_tbl]
     for j in range(len(tmp_torsion)): # Add the relations coming from the torsion of tmp_summand gens.
         result=result+[tmp_torsion[j]*tmp_summand_gens[j]]
     result=result+relations(ideal(tmp_gamma), tmp_torsion, tmp_summand_gens)
@@ -364,12 +366,12 @@ def presentation_with_restriction_and_classes(group, n, upper_bound, modified_st
             subresult[j]=subresult[j]+[sub_tmp_torsion[j][k]*sub_tmp_summand_gens[j][k]]
         subresult[j]=subresult[j]+relations(ideal(sub_tmp_gamma[j]), sub_tmp_torsion[j], sub_tmp_summand_gens[j])
     I=weak_gens[2].ideal([1]) # Initialize I to be the entire ring weak_gens[2] interpreted as the ideal generated by 1.
-    for i in range(len(subgroups)): # Compute the preimage of relations holding in F_n/F_(n+1) for R(subgroups[i]) under restriction G->subgroups[i].
+    for i in range(len(sub_tbl)): # Compute the preimage of relations holding in F_n/F_(n+1) for R(subgroups[i]) under restriction G->subgroups[i].
         J=weak_gens[8][i].inverse_image(ideal(subresult[i]))    
         I=I.intersection(J)   
     print(tmp_summand_gens)
     print("This function returns a list [generators, interpretation of generators, relations, non-zero terms that restrict to zero, ID's of subgroups]")
-    return [strong_gens[1]+weak_gens[3],strong_gens[0]+[["generator that is not a Chern class",added_degrees[i]] for i in range(len(added_strong_gens))],[i for i in macaulay2(ideal(result)).trim().sage().gens()],[i for i in relations(I, tmp_torsion, tmp_summand_gens) if i not in ideal(result)],[group.ConjugacyClassesSubgroups()[i].Representative().IdGroup() for i in subgroups]] 
+    return [strong_gens[1]+weak_gens[3],strong_gens[0]+[["generator that is not a Chern class",added_degrees[i]] for i in range(len(added_strong_gens))],[i for i in macaulay2(ideal(result)).trim().sage().gens()],[i for i in relations(I, tmp_torsion, tmp_summand_gens) if i not in ideal(result)],[i.UnderlyingGroup().IdGroup() for i in sub_tbl]] 
     # Return terms in I that don't hold as relations in gr^n_geom R(G).
     
     
