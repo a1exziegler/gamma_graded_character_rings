@@ -20,12 +20,12 @@
 # To this end a ZZ-polynomial ring in many variables is created and all of theses variables will be identified with elements
 # of the augmentation ideal of R(G) that map to a generating set of gr*_\gamma.
 # These will always be given meaning as abstract Chern classes of representations of G i.e. symbols that are mapped to Chern classes in gr*_\gamma
-# or, depending on the context, also the canonical lifts of these Chern classes in R(G).
+# or, depending on the context, also the canonical lifts of these Chern classes to R(G).
 # The j-th abstract Chern classes of the i-th entry in reps as provided by GAP (where list start at position 1!) is represented as the nested list [1,[i,j]]. 
 # Integer monomials of Chern classes are represented as nested lists [z,[i_1,j_n], ..., [i_n,j_n]] where z is the integer coefficient
 # and the other factors are j_k-th Chern classes of i_k-th entries in reps. Integer polynomials are realized as lists of integer monomials.
 
-#Load the GAP functions that are used to perform representation theoretic computations.
+# Load the GAP functions that are used to perform representation theoretic computations.
 gap.eval('Read("gamma-filtration.g");')
 
 # Given a list of generators in a polynomial ring, this converts a list of abstract integer monomials of Chern classes given by chern_monos into 
@@ -59,7 +59,7 @@ def abstract_lin_combs(generators, chern_lin_combs, gens_key):
 # Instead of a GAP-group G this function takes as input T:=CharacterTable(G) and reps:=Irr(T) to avoid repeated computations.
 def abstract_gamma_ideal(T,reps,generators, n, gens_key):
     almost_abstract_ideal=gap.function_call('gamma_ideal_generators',[T,reps,n,gap(gens_key)])[2].sage() #For details see gamma-filtration.g
-    abstract_ideal = gamma_graded_gens()#abstract_characters(generators, almost_abstract_ideal, gens_key)
+    abstract_ideal = gamma_graded_gens()
     return abstract_ideal
 
 # This generates a polynomial ring R:=ZZ[R.gens()] and assigns every entry of R.gens() a corresponding abstract Chern class at the same position in the list result.
@@ -72,11 +72,6 @@ def abstract_assoc_gens_weak(T, reps, coefficients, added_summands):
     R = PolynomialRing(coefficients,'x',gap.function_call('Length',[result]).sage()+added_summands)
     return [result, [R.gens()[i] for i in range(len(result))], R, [R.gens()[i] for i in range(len(result),len(result)+added_summands)]]
 
-#Ignore
-def abstract_assoc_gens_very_weak(T, reps, coefficients):
-    result = gap.function_call('very_weak_assoc_generators',[T,reps])[2].sage() #For details see gamma-filtration.g
-    R = PolynomialRing(coefficients,'x',gap.function_call('Length',[result]).sage())
-    return [result, R.gens(), R]
 
 # This generates polynomial rings R:=ZZ[R.gens()], subR[i]:=ZZ[subR[i].gens()], together with a list submaps whose entries are 
 # restriction maps R->subR[i] for all entries i in subgroups (subgrups is asummed to be a list of positive integers). 
@@ -128,25 +123,9 @@ def abstract_assoc_summand_gens(generators, T, reps, n, gens_key):
             high_degree = high_degree+1
     for i in range(high_degree):              # Remove high_degree many almost_abstract_gens.
         almost_abstract_gens.pop()            
-    abstract_gens = abstract_characters(generators, almost_abstract_gens, gens_key) # Turn the remaining almost_abstract_gens into terms expressed in genrators.
+    abstract_gens = abstract_characters(generators, almost_abstract_gens, gens_key) # Turn the remaining almost_abstract_gens into terms expressed in generators.
     return abstract_gens
     
-#Ignore   
-def abstract_assoc_summand_gens_with_images(generators, images, degrees, T, reps, n, gens_key):
-    abstract_gens=[]
-    for a in range(len(images)):
-        almost_abstract_gens=gap.function_call('gamma_ideal_generators',[T,reps,n-degrees[a],gens_key])[2].sage()
-        high_degree = 0
-        for i in range(len(almost_abstract_gens)):
-            degree = 0
-            for j in almost_abstract_gens[i]:
-                if j!= 1:
-                    degree = degree+j[1]
-            if degree>n-degrees[a]:
-                high_degree = high_degree+1
-        for i in range(high_degree):
-            almost_abstract_gens.pop()
-    return [abstract_gens, gens_key]
     
 # This takes as input a list generators of variables of an integer polynomial ring that can be identified with abstract Chern classes at the same position in the list gens_key.
 # We assume that gens_key contains all non-zero Chern classes of all representations.
@@ -166,10 +145,10 @@ def reduced_exp_ideal(T,reps, generators, gens_key):
 def proper_abstract_gamma_ideal(T,reps,n, weak_gens, added_rels, added_degrees):
     strong_gens = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0]); #Compute a generating set of R(G) with fewer redundancies.
     deg_list=[strong_gens[0][i][1][1] for i in range(len(strong_gens[0]))]+added_degrees
-    return reduced_exp_ideal(T,reps, weak_gens[1],weak_gens[0])+gamma_graded_gens(strong_gens[1]+added_rels,deg_list,[n,n+max(deg_list)]) #
+    return reduced_exp_ideal(T,reps, weak_gens[1],weak_gens[0])+gamma_graded_gens(strong_gens[1]+added_rels,deg_list,[n,n+max(deg_list)]) 
     
 # This takes as input a list gens of generators of a ring R and an ideal in R as well as a non-negative integer upper_bound
-# that is an upper bound with respect to divisibilty on the torsion of R/ideal, by which we mean R/ideal ought to be upper_bound-torsion.
+# that is an upper bound with respect to divisibility on the torsion of R/ideal, by which we mean R/ideal ought to be upper_bound-torsion.
 # It returns a list result whose entries are the torsion of the entries of gens at the same position.
 # One can also use an arbitrary non-negative number for upper_bound and then the entries of result 
 # are, if it divides upper_bound, the torsion of the corresponding entry of gens and else just upper_bound.
@@ -179,7 +158,7 @@ def torsion(ideal, upper_bound, gens):
     result = [upper_bound for i in gens] # result is initialized as a list that is upper_bound everywhere.
     for i in range(len(gens)):
         stop = false    # stop will turn true if torsion smaller than upper_bound is detected for gens[i], prompting the loop to end.
-        for j in divisors(upper_bound): # We only check divisors of upper_bound to improve perfomance greatly.
+        for j in divisors(upper_bound): # We only check divisors of upper_bound to improve performance greatly.
             if not stop:
                 if j*gens[i] in ideal: # Check whether gens[i] is j-torsion modulo ideal and, if so, exit the loop-
                     result[i]=j
@@ -200,7 +179,7 @@ def relations(ideal, torsion, gens):
             test_comb[j]=i[j]*test_comb[j]
         if sum(test_comb) in ideal:
             result.append(sum(test_comb))
-    return(result)
+    return result
     
 # This takes as input a list gens of elements of a ring, a list of positive integers degs such that we interpret gens[i] to be homogeneous of degree deg[i],
 # and a pair of positive integers bounds. It returns the list of all products of entries of gens whose degree is between bound[0] and bounds[1].
@@ -212,34 +191,13 @@ def gamma_graded_gens(gens, degs, bounds):
         degs_sums = degs_sums + [x for x in cartesian_product([degs for j in range(i+1)])]
     return list(uniq([product(gens_products[i]) for i in range(len(degs_sums)) if sum(degs_sums[i]) in range(bounds[0],bounds[1]+1)]))
 
-#Ignore
-def presentation_tmp(group, n, upper_bound, modified_strong_gens): 
-    result=[]
-    T=gap(group).CharacterTable()
-    reps=gap(T).Irr()
-    weak_gens=abstract_assoc_gens_weak(T, reps, ZZ,0)
-    strong_gens=[[],[]]
-    if modified_strong_gens[0]:
-        strong_gens[0]=[tmp[0][i] for i in range(len(tmp[0])) if i in modified_strong_gens[1]]
-        strong_gens[1]=[tmp[1][i] for i in range(len(tmp[1])) if i in modified_strong_gens[1]]
-    else:
-        strong_gens=tmp
-    print(strong_gens[1])
-    print(strong_gens[0])
-    for i in range(1,n+1):
-        tmp_summand_gens=abstract_assoc_summand_gens(strong_gens[1], T, reps, i, strong_gens[0])
-        tmp_gamma=proper_abstract_gamma_ideal(T, reps, i+1, weak_gens,[],[])
-        tmp_torsion=torsion(ideal(tmp_gamma), upper_bound, tmp_summand_gens)
-        for j in range(len(tmp_torsion)):
-            result=result+[tmp_torsion[j]*tmp_summand_gens[j]]
-        result=result+relations(ideal(tmp_gamma), tmp_torsion, tmp_summand_gens)
-    return [macaulay2(ideal(result)).trim().sage(),strong_gens[1]]
 
-# We omit a detailed description and refer the reader to readme.pdf.
+
+# We omit a detailed description and refer the reader to docu.pdf.
 def presentation(tbl,n, upper_bound, modified_strong_gens):
     return presentation_with_classes(tbl,n,upper_bound, modified_strong_gens, [],[])
     
-# We omit a detailed description and refer the reader to readme.pdf.
+# We omit a detailed description and refer the reader to docu.pdf.
 def presentation_with_classes(T, n, upper_bound, modified_strong_gens, added_strong_gens, added_degrees): 
     result=[]
     reps=gap(T).Irr() # The irreducible complex characters of G.
@@ -265,64 +223,16 @@ def presentation_with_classes(T, n, upper_bound, modified_strong_gens, added_str
     return [strong_gens[1]+weak_gens[3],strong_gens[0]+[["generator that is not a Chern class",added_degrees[i]] for i in range(len(added_strong_gens))],[i for i in macaulay2(ideal(result)).trim().sage().gens()]]
     
     
-#Ignore
-def presentation_with_restriction_tmp(tbl, n, upper_bound, modified_strong_gens, subgroups):
-    variables=["a"]                             #Determine names for generators of the various gr*_\gamma R(H) with H a subgroup
-    for i in range(len(subT)-1):           #in terms of multiple copies of "a".
-        variables.append(variables[i]+"a")
-    result=[]
-    subresult=[[] for i in range(len(subgroups))]
-    gap_subgroups=[group.ConjugacyClassesSubgroups()[i].Representative() for i in subgroups]
-    reps=gap(T).Irr()
-    subT=[i.CharacterTable() for i in gap_subgroups] #The irreducible complex characters of the  subgroups of G specified in subgroups.
-    weak_gens=abstract_assoc_gens_weak_with_subgroups(T, reps, subT, gap_subgroups, variables,0)
-    #A generating set of gr^*_\gamma R(G) with many redundancies and the restriction maps of their lifts in R(G) to R(gap_subgroups[i]).
-    tmp = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0])
-    sub_strong_gens = [abstract_assoc_gens_strong(subT[i], subT[i].Irr(), weak_gens[5][i], weak_gens[4][i]) for i in range(len(subgroups))]
-    strong_gens=[[],[]]  #strong_gens will consist of precisely the i-the generators given by tmp such that i is an entry in modified_strong_gens[1], if so desired.
-    if modified_strong_gens[0]: #Delete strong_gens as described by modified_strong_gens.
-        strong_gens[0]=[tmp[0][i] for i in range(len(tmp[0])) if i in modified_strong_gens[1]] 
-        strong_gens[1]=[tmp[1][i] for i in range(len(tmp[1])) if i in modified_strong_gens[1]]  
-    else:
-        strong_gens=tmp
-    print(strong_gens[1])
-    print(strong_gens[0])
-    for i in range(1,n+1): # Determine n-th gamma ideals in R(G) with G=group and R(H) with H a subgroup of G as well as linear combinations
-        tmp_summand_gens=abstract_assoc_summand_gens(strong_gens[1], T, reps, i, strong_gens[0])
-        print(tmp_summand_gens)
-        sub_tmp_summand_gens=[abstract_assoc_summand_gens(sub_strong_gens[j][1], subT[j], subT[j].Irr(), i, sub_strong_gens[j][0]) for j in range(len(subgroups))]
-        tmp_gamma=proper_abstract_gamma_ideal(T, reps, i+1, [weak_gens[0],weak_gens[1], weak_gens[2]],[],[])
-        sub_tmp_gamma=[proper_abstract_gamma_ideal(subT[j], subT[j].Irr(), i+1, [weak_gens[4][j], weak_gens[5][j], weak_gens[6][j]],[],[]) for j in range(len(subgroups))]
-        tmp_torsion=torsion(ideal(tmp_gamma), upper_bound, tmp_summand_gens)
-        sub_tmp_torsion=[torsion(ideal(sub_tmp_gamma[j]), gap_subgroups[j].Size().sage(), sub_tmp_summand_gens[j]) for j in range(len(subgroups))]
-        for j in range(len(tmp_torsion)):
-            result=result+[tmp_torsion[j]*tmp_summand_gens[j]]
-        result=result+relations(ideal(tmp_gamma), tmp_torsion, tmp_summand_gens)
-        for j in range(len(sub_tmp_torsion)):
-            for k in range(len(sub_tmp_torsion[j])):
-                subresult[j]=subresult[j]+[sub_tmp_torsion[j][k]*sub_tmp_summand_gens[j][k]]
-            subresult[j]=subresult[j]+relations(ideal(sub_tmp_gamma[j]), sub_tmp_torsion[j], sub_tmp_summand_gens[j])
-    I=weak_gens[2].ideal([1])
-    generator_ideal=gap.function_call('graded_generator_ideal',[reps,weak_gens[0]]).sage()
-    for i in range(len(subgroups)):
-        sub_generator_ideal=gap.function_call('graded_generator_ideal',[subT[i].Irr(),weak_gens[4][i]]).sage()
-        subresult[i]=subresult[i]+[abstract_characters(weak_gens[5][i], [sub_generator_ideal[0][j]], weak_gens[4][i])[0]-abstract_lin_combs(weak_gens[5][i], [sub_generator_ideal[1][j]], weak_gens[4][i])[0] for j in range(len(sub_generator_ideal[0]))]
-        J=weak_gens[8][i].inverse_image(ideal(subresult[i]))    
-        I=I.intersection(J)   
-    I=I+ideal([abstract_characters(weak_gens[1], [generator_ideal[0][i]], weak_gens[0])[0]-abstract_lin_combs(weak_gens[1], [generator_ideal[1][i]], weak_gens[0])[0] for i in range(len(generator_ideal[0]))])#Keep in mind, abstract_characters_returns a list
-    result=result+[abstract_characters(weak_gens[1], [generator_ideal[0][i]], weak_gens[0])[0]-abstract_lin_combs(weak_gens[1], [generator_ideal[1][i]], weak_gens[0])[0] for i in range(len(generator_ideal[0]))]
-    return [[i for i in relations(I, tmp_torsion, tmp_summand_gens) if i not in ideal(result)]]
-    
-    
+# We omit a detailed description and refer the reader to docu.pdf.  
 def prepare_tables(subgroup_list, tbl, subgroups_index):
     sub_tbl=[subgroup_list[i].Representative().CharacterTable() for i in subgroups_index]
     return [tbl, sub_tbl]
 
-# We omit a detailed description and refer the reader to readme.pdf.
+# We omit a detailed description and refer the reader to docu.pdf.
 def presentation_with_restriction(tbls, n, upper_bound, modified_strong_gens):
     return presentation_with_restriction_and_classes(tbls, n, upper_bound, modified_strong_gens, [],[],[],[])
 
-# We omit a detailed description and refer the reader to readme.pdf.
+# We omit a detailed description and refer the reader to docu.pdf.
 def presentation_with_restriction_and_classes(tbls, n, upper_bound, modified_strong_gens, added_strong_gens, added_degrees, sub_added_rels, sub_added_degrees):
     tbl=tbls[0]
     sub_tbl=tbls[1]
@@ -375,112 +285,7 @@ def presentation_with_restriction_and_classes(tbls, n, upper_bound, modified_str
     # Return terms in I that don't hold as relations in gr^n_geom R(G).
     
     
-# !!! Ignore everything beyond this point !!!    
-    
-# this function takes the same input as presentation but only prints the list of orders of generators of
-# the i-th graded pieces of gr*_\gamma with i<=n. It is useful to gather information where presentation is not a feasible option.
-def improved_torsion(group, n, upper_bound, modified_strong_gens):
-    result=[]
-    T=gap(group).CharacterTable()
-    reps=gap(T).Irr()
-    weak_gens=abstract_assoc_gens_weak(T, reps, ZZ,0)
-    tmp = abstract_assoc_gens_strong(T,reps, weak_gens[1], weak_gens[0])
-    strong_gens=[[],[]]
-    if modified_strong_gens[0]:
-        strong_gens[0]=[tmp[0][i] for i in range(len(tmp[0])) if i in modified_strong_gens[1]]
-        strong_gens[1]=[tmp[1][i] for i in range(len(tmp[1])) if i in modified_strong_gens[1]]
-    else:
-        strong_gens=tmp
-    print(strong_gens[1])
-    print(strong_gens[0])
-    for i in range(1,n+1):
-        tmp_summand_gens=abstract_assoc_summand_gens(strong_gens[1], T,reps,i, strong_gens[0])
-        tmp_gamma=proper_abstract_gamma_ideal(T,reps,i+1, weak_gens)
-        tmp_torsion=torsion(ideal(tmp_gamma), upper_bound, tmp_summand_gens)
-        print(tmp_torsion)
-        
-def elem_sym_poly(variables, deg):
-    result=0
-    for i in subsets(variables):
-        if len(i) == deg:
-            result=result+product(i)
-    return result
-        
-        
-def split(gens, R, dims, gens_key,coefficients):
-    S = PolynomialRing(coefficients,'y',sum(dims))
-    image=[]
-    for x in range(len(gens)):
-        subvar_range_start=sum([dims[i] for i in range(gens_key[x][1][0]-1)])
-        subvars=[S.gens()[subvar_range_start+i] for i in range(dims[gens_key[x][1][0]-1])]
-        print(x,gens_key[x],subvars)
-        image = image+[elem_sym_poly(subvars,gens_key[x][1][1])]
-    print([S,image])
-    phi=R.hom(image,S)
-    return [S,phi]
-    
-def mul_chern_class(split_gens, factors, dims, deg, hom):
-    subvar_range_start=[sum([dims[i] for i in range(factors[0])]),sum([dims[i] for i in range(factors[1])])]
-    terms=[]
-    for i in range(dims[factors[0]]):
-        for j in range(dims[factors[1]]):
-            terms=terms+[split_gens[i+subvar_range_start[0]]+split_gens[j+subvar_range_start[1]]]
-    print("mul:")
-    print([factors, terms, deg])
-    return hom.inverse_image(elem_sym_poly(terms, deg))
-    
-def ext_chern_class(split_gens, base, exp, dims, deg, hom):
-    subvar_range_start=sum([dims[i] for i in range(base)])
-    terms=[]
-    print("ext:")
-    for x in subsets([split_gens[i+subvar_range_start] for i in range(dims[base])]):
-        if len(x)==exp:
-            terms=terms+[sum(x)]
-    print([terms, deg, exp])
-    print(elem_sym_poly(terms, deg))
-    return hom.inverse_image(elem_sym_poly(terms, deg))
-    
-def sum_chern_class(split_gens, lin_comb, dims, deg, hom):
-    terms=0
-    summands=[]
-    for x in range(len(lin_comb)):
-        for y in range(lin_comb[x]):
-            summands = summands+[x]
-    subvar_range_start=[sum([dims[i] for i in range(x)]) for x in summands]
-    subvars=[[split_gens[i+subvar_range_start[j]] for i in range(dims[summands[j]])] for j in range(len(summands))]
-    deg_vectors=[range(0,deg+1) for x in summands]
-    for i in [x for x in cartesian_product(deg_vectors) if sum(x)==deg]:
-        tmp=1
-        for j in range(len(summands)):
-            tmp=tmp*elem_sym_poly(subvars[j], i[j])
-        terms=terms+tmp
-    print("sum:")
-    print([terms, deg])
-    return hom.inverse_image(terms)
 
-def formal_relations(group, coefficients, deg_limit):
-    result_mul=[]
-    result_ext=[]
-    T=gap(group).CharacterTable()
-    reps=gap(T).Irr()
-    weak_gens=abstract_assoc_gens_very_weak(T, reps, coefficients)
-    print(weak_gens)
-    dims=[max([x[1][1] for x in weak_gens[0] if x[1][0]==i+1]+[0]) for i in range(len(reps))]
-    print(dims)
-    split_map=split(weak_gens[1],weak_gens[2],dims,weak_gens[0],coefficients)
-    for x in range(len(reps)):
-        for y in range(x,len(reps)):
-            x_transformed=gap.function_call('int_to_character',[1,len(reps),x+1])
-            y_transformed=gap.function_call('int_to_character',[1,len(reps),y+1])
-            prod=gap.function_call('product_rep_ring',[reps,x_transformed,y_transformed]).sage()
-            for i in range(min([sum(prod),deg_limit])):
-                result_mul = result_mul + [sum_chern_class(split_map[0].gens(),prod, dims, i+1, split_map[1])-mul_chern_class(split_map[0].gens(),[x,y],dims,i+1,split_map[1])]
-    for x in range(len(reps)):
-        for i in range(reps[x+1][1].sage()):
-            ext=gap.function_call('exterior_power',[T,reps,x+1,i+1]).sage()
-            for j in range(min([binomial(reps[x+1][1].sage(),i),deg_limit])):
-                result_ext = result_ext+ [sum_chern_class(split_map[0].gens(),ext, dims, j+1, split_map[1])- ext_chern_class(split_map[0].gens(), x, i+1, dims, j+1, split_map[1])]
-    return [result_mul, result_ext, macaulay2(ideal(result_mul+result_ext)).trim().sage(), [[weak_gens[0][i],weak_gens[1][i]] for i in range(len(weak_gens[0]))],weak_gens]
     
     
     
